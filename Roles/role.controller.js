@@ -1,13 +1,13 @@
 import Roles from "./role.model.js";
 
-export const createRole = async (req, res) => {
+export const createRole = async (req, res, next) => {
   try {
     const { role } = req.body;
 
     const userRole = await Roles.findOne({ role: role });
 
     if (userRole) {
-      return res.status(409).send({ error: "Role Already Exist" });
+      throw { status: 409, message: "Role Already Exist" };
     }
 
     const newRole = new Roles(req.body);
@@ -15,7 +15,6 @@ export const createRole = async (req, res) => {
     await newRole.save();
     return res.status(201).send({ message: "Role Created Successfully" });
   } catch (error) {
-    console.log(error.message);
-    return res.status(500).send({ error: "Internal Server Error" });
+    next(error);
   }
 };

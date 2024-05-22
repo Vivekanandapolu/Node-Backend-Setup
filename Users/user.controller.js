@@ -1,5 +1,5 @@
 import Roles from "../Roles/role.model.js";
-import { geneateJwtToken } from "../utils/auth.js";
+import { generateToken } from "../utils/auth.js";
 import Users from "./user.model.js";
 import bcrypt from "bcryptjs";
 
@@ -8,24 +8,22 @@ export const createUser = async (req, res, next) => {
     const { email, role } = req.body;
     const roleId = await Roles.findById(role);
     if (!roleId) {
-      return next({ status: 404, message: "Role Not Found" });
+      throw { status: 404, message: "Role Not Found" };
     }
 
     const userExist = await Users.findOne({ email: email });
-    if (!email) {
-      return next({ status: 409, message: "User Already Exists" });
-    } else if (userExist) {
-      return next({ status: 409, message: "User Already Exists" });
+    if (userExist) {
+      throw { status: 409, message: "User Already Exists" };
     } else {
       const salt = await bcrypt.genSalt(10);
       const hashPass = await bcrypt.hash(req.body.password, salt);
       req.body.password = hashPass;
       const newUser = new Users(req.body);
       await newUser.save();
-      return res.status(401).send({ message: "User Created" });
+      return res.status(201).send({ message: "User Created" });
     }
   } catch (error) {
-    next({ status: 500, message: "Internal Server Error", error });
+    next(error);
   }
 };
 
@@ -58,7 +56,7 @@ export async function getAllUsers(req, res, next) {
       // currentPage: page,
     });
   } catch (error) {
-    next({ status: 500, message: "Internal Server Error", error });
+    next(error);
   }
 }
 
@@ -70,39 +68,39 @@ export const deleteUser = async (req, res, next) => {
 
     const user = await Users.findById(userId);
     if (!user) {
-      res.status(404).send({ error: "No User Found" });
+      throw { status: 404, message: "No User Found" };
     }
     user.deleted = true;
     user.deletedAt = new Date();
     user.save();
     res.status(200).send({ message: "User Deleted Successfully" });
   } catch (error) {
-    next({ status: 500, message: "Internal Server Error", error });
+    next(error);
   }
 };
 
-//Login  User
+//Login User
 
 export const userLogin = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     if (!email) {
-      return res.status(403).send({ error: "Enter Valid Credentials" });
+      throw { status: 403, message: "Enter Valid Credentials" };
     }
 
     const user = await Users.findOne({ email: email });
     if (!user) {
-      return res.status(404).send({ error: "User Not Found" });
+      throw { status: 404, message: "User Not Found" };
     }
     const pass = await bcrypt.compare(password, user.password);
 
     if (!pass) {
-      return res.status(404).send({ error: "Password Not Matched" });
+      throw { status: 404, message: "Password Not Matched" };
     }
 
-    const token = geneateJwtToken(user);
+    const token = generateToken(user);
     return res.status(200).send({ message: "User Logged In", token: token });
   } catch (error) {
-    next({ status: 500, message: "Internal Server Error", error });
+    next(error);
   }
 };
