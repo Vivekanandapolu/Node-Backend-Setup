@@ -39,7 +39,7 @@ export async function getAllUsers(req, res, next) {
     const totalUsers = await Users.countDocuments();
 
     // Fetch the users with pagination, sorting, and population
-    const users = await Users.find()
+    const users = await Users.find({}, { password: 0 })
       .populate("files")
       .populate("role")
       .limit(5);
